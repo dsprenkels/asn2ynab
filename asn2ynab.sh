@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Authors:
+# 	- Gerdriaan Mulder <mrngm@moeilijklastig.nl> (2020)
+#   - Daan Sprenkels <daan@dsprenkels.com> (2021)
+#
+# This script is based on the original asn2ynab.sh script from Gerdriaan
+# Mulder, from whom I have a license to modify and redistribute future
+# versions with attribution.
+
 echo "Date,Payee,Category,Memo,Outflow,Inflow"
 while IFS='' read -r line; do
 	line=`echo "$line" | sed -e 's/\r//g'| tr -d \"`
