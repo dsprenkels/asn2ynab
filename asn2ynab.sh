@@ -8,6 +8,9 @@
 # Mulder, from whom I have a license to modify and redistribute future
 # versions with attribution.
 
+readonly ASN_COMMA=','
+readonly YNAB_COMMA=','
+
 if [[ ($# != 1 && $# != 2) || $1 == "--help" || $1 == "-h" ]]; then
 	echo >&2 "Usage: $0 infile [outfile]"
 	echo >&2
@@ -32,21 +35,21 @@ else
 	echo >&2 "Writing output to '$OUTFILE'"
 fi
 
-echo >"$OUTFILE" "Date,Payee,Category,Memo,Outflow,Inflow"
+echo >"$OUTFILE" "Date${YNAB_COMMA}Payee${YNAB_COMMA}Category${YNAB_COMMA}Memo${YNAB_COMMA}Outflow${YNAB_COMMA}Inflow"
 while IFS='' read -r line; do
 	line=$(echo "$line" | sed -e 's/\r//g'| tr -d \")
 
 	# ASN export already uses DD-MM-YYYY, so no need to convert.
-	DATE=$(echo "$line" | cut -d ';' -f 1)
+	DATE=$(echo "$line" | cut -d "$ASN_COMMA" -f 1)
 	if [[ "$DATE" == "Datum" ]]; then
 		# This line contains the CSV headers, skip.
 		continue
 	fi
-	PAYEE=$(echo "$line" | cut -d ';' -f 4 | tr '[:lower:]' '[:upper:]') # lowercase payee, convert to uppercase
-	AFBIJ=$(echo "$line" | cut -d ';' -f 11)
-	AMOUNT=$(echo "$line" | cut -d ';' -f 11) # ASN already has dot separator; no need to convert.
-	TX_TYPE=$(echo "$line" | cut -d ';' -f 15)
-	MEMO=$(echo "$line" | cut -d ';' -f 18)
+	PAYEE=$(echo "$line" | cut -d "$ASN_COMMA" -f 4 | tr '[:lower:]' '[:upper:]') # lowercase payee, convert to uppercase
+	AFBIJ=$(echo "$line" | cut -d "$ASN_COMMA" -f 11)
+	AMOUNT=$(echo "$line" | cut -d "$ASN_COMMA" -f 11) # ASN already has dot separator; no need to convert.
+	TX_TYPE=$(echo "$line" | cut -d "$ASN_COMMA" -f 15)
+	MEMO=$(echo "$line" | cut -d "$ASN_COMMA" -f 18)
 
 	INFLOW=""
 	OUTFLOW=""
@@ -61,6 +64,6 @@ while IFS='' read -r line; do
 		PAYEE=${MEMO%>*}
 	fi
 
-	echo >>"$OUTFILE" "${DATE},\"${PAYEE}\",,\"${TX_TYPE} / ${MEMO}\",${OUTFLOW},${INFLOW}"
+	echo >>"$OUTFILE" "${DATE}${YNAB_COMMA}\"${PAYEE}\"${YNAB_COMMA}${YNAB_COMMA}\"${TX_TYPE} / ${MEMO}\"${YNAB_COMMA}${OUTFLOW}${YNAB_COMMA}${INFLOW}"
 
 done <"$INFILE"
