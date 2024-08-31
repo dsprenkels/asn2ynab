@@ -11,6 +11,10 @@
 readonly ASN_COMMA=','
 readonly YNAB_COMMA=','
 
+function trimquotes() {
+	sed -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/"
+}
+
 if [[ ($# != 1 && $# != 2) || $1 == "--help" || $1 == "-h" ]]; then
 	echo >&2 "Usage: $0 infile [outfile]"
 	echo >&2
@@ -45,11 +49,11 @@ while IFS='' read -r line; do
 		# This line contains the CSV headers, skip.
 		continue
 	fi
-	PAYEE=$(echo "$line" | cut -d "$ASN_COMMA" -f 4 | tr '[:lower:]' '[:upper:]') # lowercase payee, convert to uppercase
+	PAYEE=$(echo "$line" | cut -d "$ASN_COMMA" -f 4 | trimquotes) # payee, remove leading quote
 	AFBIJ=$(echo "$line" | cut -d "$ASN_COMMA" -f 11)
 	AMOUNT=$(echo "$line" | cut -d "$ASN_COMMA" -f 11) # ASN already has dot separator; no need to convert.
 	TX_TYPE=$(echo "$line" | cut -d "$ASN_COMMA" -f 15)
-	MEMO=$(echo "$line" | cut -d "$ASN_COMMA" -f 18)
+	MEMO=$(echo "$line" | cut -d "$ASN_COMMA" -f 18 | trimquotes) # memo, remove trainling quote
 
 	INFLOW=""
 	OUTFLOW=""
