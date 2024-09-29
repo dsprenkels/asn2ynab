@@ -65,42 +65,44 @@ if [[ -z $OUTFILE ]]; then
 	echo >&2 "Writing output to '$OUTFILE'"
 fi
 
-echo >"$OUTFILE" "Date${YNAB_COMMA}Payee${YNAB_COMMA}Category${YNAB_COMMA}Memo${YNAB_COMMA}Outflow${YNAB_COMMA}Inflow"
-while IFS='' read -r line; do
-	line=$(echo "$line" | sed -e 's/\r//g'| tr -d \")
+(
+	echo "Date${YNAB_COMMA}Payee${YNAB_COMMA}Category${YNAB_COMMA}Memo${YNAB_COMMA}Outflow${YNAB_COMMA}Inflow"
+	while IFS='' read -r line; do
+		line=$(echo "$line" | sed -e 's/\r//g'| tr -d \")
 
-	# ASN export already uses DD-MM-YYYY, so no need to convert.
-	DATE=$(echo "$line" | cut -d "$ASN_COMMA" -f 1)
-	if [[ "$DATE" == "Datum" ]]; then
-		# This line contains the CSV headers, skip.
-		continue
-	fi
-	PAYEE=$(echo "$line" | cut -d "$ASN_COMMA" -f 4 | trimquotes) # payee, remove leading quote.
-	AFBIJ=$(echo "$line" | cut -d "$ASN_COMMA" -f 11)
-	AMOUNT=$(echo "$line" | cut -d "$ASN_COMMA" -f 11) # ASN already has dot separator; no need to convert.
-	TX_TYPE=$(echo "$line" | cut -d "$ASN_COMMA" -f 15)
-	MEMO=$(echo "$line" | cut -d "$ASN_COMMA" -f 18 | trimquotes) # memo, remove trainling quote.
+		# ASN export already uses DD-MM-YYYY, so no need to convert.
+		DATE=$(echo "$line" | cut -d "$ASN_COMMA" -f 1)
+		if [[ "$DATE" == "Datum" ]]; then
+			# This line contains the CSV headers, skip.
+			continue
+		fi
+		PAYEE=$(echo "$line" | cut -d "$ASN_COMMA" -f 4 | trimquotes) # payee, remove leading quote.
+		AFBIJ=$(echo "$line" | cut -d "$ASN_COMMA" -f 11)
+		AMOUNT=$(echo "$line" | cut -d "$ASN_COMMA" -f 11) # ASN already has dot separator; no need to convert.
+		TX_TYPE=$(echo "$line" | cut -d "$ASN_COMMA" -f 15)
+		MEMO=$(echo "$line" | cut -d "$ASN_COMMA" -f 18 | trimquotes) # memo, remove trainling quote.
 
-	INFLOW=""
-	OUTFLOW=""
-	if [[ "${AFBIJ:0:1}" == "-" ]]; then
-		OUTFLOW="${AMOUNT#-}"
-	elif [[ "${AFBIJ:0:1}" != "-" ]]; then
-		INFLOW="$AMOUNT"
-	fi
+		INFLOW=""
+		OUTFLOW=""
+		if [[ "${AFBIJ:0:1}" == "-" ]]; then
+			OUTFLOW="${AMOUNT#-}"
+		elif [[ "${AFBIJ:0:1}" != "-" ]]; then
+			INFLOW="$AMOUNT"
+		fi
 
-	if [[ "${PAYEE}x" == "x" ]]; then
-		# Empty payee, we have to extract it from MEMO, and reset $PAYEE.
-		PAYEE=${MEMO%>*}
-	fi
+		if [[ "${PAYEE}x" == "x" ]]; then
+			# Empty payee, we have to extract it from MEMO, and reset $PAYEE.
+			PAYEE=${MEMO%>*}
+		fi
 
-	# Leave the memo field empty if --memo is not set.
-	if [[ $SHOW_MEMO -ne 0 ]]; then
-		MEMO_OUT="${TX_TYPE} / ${MEMO}"
-	else
-		MEMO_OUT=""
-	fi
+		# Leave the memo field empty if --memo is not set.
+		if [[ $SHOW_MEMO -ne 0 ]]; then
+			MEMO_OUT="${TX_TYPE} / ${MEMO}"
+		else
+			MEMO_OUT=""
+		fi
 
-	echo >>"$OUTFILE" "${DATE}${YNAB_COMMA}\"${PAYEE}\"${YNAB_COMMA}${YNAB_COMMA}\"${MEMO_OUT}\"${YNAB_COMMA}${OUTFLOW}${YNAB_COMMA}${INFLOW}"
+		echo "${DATE}${YNAB_COMMA}\"${PAYEE}\"${YNAB_COMMA}${YNAB_COMMA}\"${MEMO_OUT}\"${YNAB_COMMA}${OUTFLOW}${YNAB_COMMA}${INFLOW}"
 
-done <"$INFILE"
+	done <"$INFILE"
+) >"$OUTFILE"
